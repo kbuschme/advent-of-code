@@ -1,0 +1,9 @@
+*
+
+!.gitignore
+!README.md
+
+!Advent of Code*/
+!Advent of Code*/Day*/
+!Advent of Code*/Day*/day_*.py
+!Advent of Code*/Day*/test_day_*.py
