@@ -1,0 +1,177 @@
+# === Translation of the program of day 21 ===
+#
+# Modifying the ip register controls execution flow, e.g.:
+#   * addr, addi are relative jumps
+#   * mulr, muli are relative jumps
+#   * setr, seti are absolute jumps
+# After the ip register changed it is automatically incremented by 1
+
+# --- Step 1: Translate to pseudo-Python
+# Registers = [0, 0, 0, 0, 0, 0]
+#ip 2
+registers[3] = 123                                      #  0 seti 123 0 3
+registers[3] = registers[3] & 456                       #  1 bani 3 456 3
+registers[3] = 1 if registers[3] == 72 else 0           #  2 eqri 3 72 3
+registers[2] = registers[3] + registers[2]              #  3 addr 3 2 2
+registers[2] = 0                                        #  4 seti 0 0 2
+registers[3] = 0                                        #  5 seti 0 0 3
+registers[1] = registers[3] | 65536                     #  6 bori 3 65536 1
+registers[3] = 4921097                                  #  7 seti 4921097 0 3
+registers[4] = registers[1] & 255                       #  8 bani 1 255 4
+registers[3] = registers[3] + registers[4]              #  9 addr 3 4 3
+registers[3] = registers[3] & 16777215                  # 10 bani 3 16777215 3
+registers[3] = registers[3] * 65899                     # 11 muli 3 65899 3
+registers[3] = registers[3] & 16777215                  # 12 bani 3 16777215 3
+registers[4] = 256 > registers[1]                       # 13 gtir 256 1 4
+registers[2] = registers[4] + registers[2]              # 14 addr 4 2 2
+registers[2] = registers[2] + 1                         # 15 addi 2 1 2
+registers[2] = 27                                       # 16 seti 27 8 2
+registers[4] = 0                                        # 17 seti 0 5 4
+registers[5] = registers[4] + 1                         # 18 addi 4 1 5
+registers[5] = registers[5] * 256                       # 19 muli 5 256 5
+registers[5] = registers[5] > registers[1]              # 20 gtrr 5 1 5
+registers[2] = registers[5] + registers[2]              # 21 addr 5 2 2
+registers[2] = registers[2] + 1                         # 22 addi 2 1 2
+registers[2] = 25                                       # 23 seti 25 1 2
+registers[4] = registers[4] + 1                         # 24 addi 4 1 4
+registers[2] = 17                                       # 25 seti 17 8 2
+registers[1] = registers[4]                             # 26 setr 4 3 1
+registers[2] = 7                                        # 27 seti 7 9 2
+registers[4] = 1 if registers[3] == registers[0] else 0 # 28 eqrr 3 0 4
+registers[2] = registers[4] + registers[2]              # 29 addr 4 2 2
+registers[2] = 5                                        # 30 seti 5 4 2
+
+
+# --- Step 2: Shorten expression, replace registers[ip] with line numbers
+registers[3] = 123                                      #  0 seti 123 0 3
+registers[3] = registers[3] & 456                       #  1 bani 3 456 3
+registers[3] = 1 if registers[3] == 72 else 0           #  2 eqri 3 72 3
+registers[2] = 3 + registers[3]                         #  3 addr 3 2 2   --> 5
+registers[2] = 0                                        #  4 seti 0 0 2   --> 1
+registers[3] = 0                                        #  5 seti 0 0 3
+registers[1] = registers[3] | 65536                     #  6 bori 3 65536 1
+registers[3] = 4921097                                  #  7 seti 4921097 0 3
+registers[4] = registers[1] & 255                       #  8 bani 1 255 4
+registers[3] += registers[4]                            #  9 addr 3 4 3
+registers[3] = registers[3] & 16777215                  # 10 bani 3 16777215 3
+registers[3] *= 65899                                   # 11 muli 3 65899 3
+registers[3] = registers[3] & 16777215                  # 12 bani 3 16777215 3
+registers[4] = 1 if 256 > registers[1] else 0           # 13 gtir 256 1 4
+registers[2] = 14 + registers[4]                        # 14 addr 4 2 2
+registers[2] = 15 + 1                                   # 15 addi 2 1 2  --> 17
+registers[2] = 27                                       # 16 seti 27 8 2 --> 28
+registers[4] = 0                                        # 17 seti 0 5 4
+registers[5] = registers[4] + 1                         # 18 addi 4 1 5
+registers[5] *= 256                                     # 19 muli 5 256 5
+registers[5] = 1 if registers[5] > registers[1] else 0  # 20 gtrr 5 1 5
+registers[2] = 21 + registers[5]                        # 21 addr 5 2 2
+registers[2] = 22 + 1                                   # 22 addi 2 1 2  --> 24
+registers[2] = 25                                       # 23 seti 25 1 2 --> 26
+registers[4] += 1                                       # 24 addi 4 1 4
+registers[2] = 17                                       # 25 seti 17 8 2 --> 18
+registers[1] = registers[4]                             # 26 setr 4 3 1
+registers[2] = 7                                        # 27 seti 7 9 2  -->  8
+registers[4] = 1 if registers[3] == registers[0] else 0 # 28 eqrr 3 0 4
+registers[2] = 29 + registers[4]                        # 29 addr 4 2 2  --> 31
+registers[2] = 5                                        # 30 seti 5 4 2  -->  6
+
+
+# --- Step 3: Combine statements, expand jumps
+# -- Verify bitwise AND is on numeric values
+registers[3] = 123                                      #  0 seti 123 0 3
+registers[3] = registers[3] & 456                       #  1 bani 3 456 3
+# If registers[3] == 72
+#   go to 5
+# else
+#   go to 1
+registers[3] = 1 if registers[3] == 72 else 0           #  2 eqri 3 72 3
+registers[2] = 3 + registers[3]                         #  3 addr 3 2 2   --> 5
+registers[2] = 0                                        #  4 seti 0 0 2   --> 1
+# -- Start actual program
+registers[3] = 0                                        #  5 seti 0 0 3
+registers[1] = registers[3] | 65536                     #  6 bori 3 65536 1
+registers[3] = 4921097                                  #  7 seti 4921097 0 3
+registers[4] = registers[1] & 255                       #  8 bani 1 255 4
+registers[3] += registers[4]                            #  9 addr 3 4 3
+registers[3] = registers[3] & 16777215                  # 10 bani 3 16777215 3
+registers[3] *= 65899                                   # 11 muli 3 65899 3
+registers[3] = registers[3] & 16777215                  # 12 bani 3 16777215 3
+# If 256 > registers[1]:
+#   go to 28
+# else
+#   go to 17
+registers[4] = 1 if 256 > registers[1] else 0           # 13 gtir 256 1 4
+registers[2] = 14 + registers[4]                        # 14 addr 4 2 2
+registers[2] = 15 + 1                                   # 15 addi 2 1 2  --> 17
+registers[2] = 27                                       # 16 seti 27 8 2 --> 28
+registers[4] = 0                                        # 17 seti 0 5 4
+registers[5] = registers[4] + 1                         # 18 addi 4 1 5
+registers[5] *= 256                                     # 19 muli 5 256 5
+# If registers[5] > registers[1]
+#   go to 26
+# else
+#   go to 24
+registers[5] = 1 if registers[5] > registers[1] else 0  # 20 gtrr 5 1 5
+registers[2] = 21 + registers[5]                        # 21 addr 5 2 2
+registers[2] = 22 + 1                                   # 22 addi 2 1 2  --> 24
+registers[2] = 25                                       # 23 seti 25 1 2 --> 26
+registers[4] += 1                                       # 24 addi 4 1 4
+registers[2] = 17                                       # 25 seti 17 8 2 --> 18
+registers[1] = registers[4]                             # 26 setr 4 3 1
+registers[2] = 7                                        # 27 seti 7 9 2  -->  8
+# If registers[3] == registers[0]
+#   go to 31 --> HALT Program
+# else
+#   go to 6
+registers[4] = 1 if registers[3] == registers[0] else 0 # 28 eqrr 3 0 4
+registers[2] = 29 + registers[4]                        # 29 addr 4 2 2  --> 31
+registers[2] = 5                                        # 30 seti 5 4 2  -->  6
+
+# --- Step 4: Python implementation
+def execute_translated_program(registers=None):
+    if registers is None:
+        registers = [0, 0, 0, 0, 0, 0]
+
+    # -- Verify bitwise AND is on numeric values
+    registers[3] = 123                                  #  0 seti 123 0 3
+    registers[3] = registers[3] & 456                   #  1 bani 3 456 3
+    while not registers[3] == 72:                       #  2 eqri 3 72 3
+        registers[3] = registers[3] & 456               #  1 bani 3 456 3
+
+    # -- Start actual program
+    registers[3] = 0                                    #  5 seti 0 0 3
+    run_loop_1 = True
+    while run_loop_1:
+        registers[1] = registers[3] | 65536             #  6 bori 3 65536 1
+        registers[3] = 4921097                          #  7 seti 4921097 0 3
+
+        run_loop_2 = True
+        while run_loop_2:
+            registers[4] = registers[1] & 255           #  8 bani 1 255 4
+            registers[3] += registers[4]                #  9 addr 3 4 3
+            registers[3] = registers[3] & 16777215      # 10 bani 3 16777215 3
+            registers[3] *= 65899                       # 11 muli 3 65899 3
+            registers[3] = registers[3] & 16777215      # 12 bani 3 16777215 3
+
+            # If -> go to end condition else continue
+            if 256 > registers[1]:                      # 13 gtir 256 1 4
+                if registers[3] == registers[0]:        # 28 eqrr 3 0 4
+                    run_loop_1 = False
+                else:
+                run_loop_2 = False
+            else:
+                registers[4] = 0                        # 17 seti 0 5 4
+                run_loop_3 = True
+                while run_loop_3:
+                    registers[5] = registers[4] + 1     # 18 addi 4 1 5
+                    registers[5] *= 256                 # 19 muli 5 256 5
+
+                    if registers[5] > registers[1]:     # 20 gtrr 5 1 5
+                        registers[1] = registers[4]     # 26 setr 4 3 1
+                        registers[2] = 7                # 27 seti 7 9 2  -->  8
+                        run_loop_3 = False
+                    else:
+                        registers[4] += 1               # 24 addi 4 1 4
+                        registers[2] = 17               # 25 seti 17 8 2 --> 18
+
+    return registers
